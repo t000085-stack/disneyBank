@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Bankappp",
+    "slug": "Bankappp",
+    "version": "1.0.0",
+    "scheme": "bankappp",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {},
+    "plugins": ["expo-router"]
+  }
+}
