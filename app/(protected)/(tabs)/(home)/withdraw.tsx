@@ -16,23 +16,23 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { AntDesign } from "@expo/vector-icons";
 import colors from "@/data/styling/colors";
-import { deposit } from "@/src/api/transactionsApi";
+import { withdraw } from "@/src/api/transactionsApi";
 import { useUser } from "@/src/context/UserContext";
 import { formatCurrency } from "@/src/utils/currencyFormat";
 
 /**
- * Deposit Page
- * Allows users to deposit money into their account
- * Uses PUT /mini-project/api/transactions/deposit
+ * Withdraw Page
+ * Allows users to withdraw money from their account
+ * Uses PUT /mini-project/api/transactions/withdraw
  */
-const DepositPage = () => {
+const WithdrawPage = () => {
   const [amount, setAmount] = useState("");
   const router = useRouter();
   const queryClient = useQueryClient();
   const { balance, updateBalance, refreshProfile } = useUser();
 
-  const depositMutation = useMutation({
-    mutationFn: deposit,
+  const withdrawMutation = useMutation({
+    mutationFn: withdraw,
     onSuccess: async (data) => {
       // Update balance in context
       updateBalance(data.balance);
@@ -43,7 +43,7 @@ const DepositPage = () => {
 
       Alert.alert(
         "Success",
-        `Deposit of ${formatCurrency(parseFloat(amount))} successful! 💰`,
+        `Withdrawal of ${formatCurrency(parseFloat(amount))} successful! 💸`,
         [
           {
             text: "OK",
@@ -57,13 +57,13 @@ const DepositPage = () => {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Failed to deposit money. Please try again.";
+        "Failed to withdraw money. Please try again.";
       Alert.alert("Error", errorMessage);
     },
   });
 
-  const handleDeposit = () => {
-    const depositAmount = parseFloat(amount);
+  const handleWithdraw = () => {
+    const withdrawAmount = parseFloat(amount);
 
     // Validation
     if (!amount.trim()) {
@@ -71,13 +71,21 @@ const DepositPage = () => {
       return;
     }
 
-    if (isNaN(depositAmount) || depositAmount <= 0) {
+    if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
       Alert.alert("Error", "Please enter a valid amount greater than 0");
       return;
     }
 
-    // Call the deposit API - PUT /mini-project/api/transactions/deposit
-    depositMutation.mutate({ amount: depositAmount });
+    if (withdrawAmount > balance) {
+      Alert.alert(
+        "Error",
+        "Insufficient balance. You don't have enough funds."
+      );
+      return;
+    }
+
+    // Call the withdraw API - PUT /mini-project/api/transactions/withdraw
+    withdrawMutation.mutate({ amount: withdrawAmount });
   };
 
   return (
@@ -100,8 +108,10 @@ const DepositPage = () => {
             >
               <AntDesign name="arrow-left" size={24} color={colors.white} />
             </TouchableOpacity>
-            <Text style={styles.title}>Deposit Money</Text>
-            <Text style={styles.subtitle}>Add funds to your account</Text>
+            <Text style={styles.title}>Withdraw Money</Text>
+            <Text style={styles.subtitle}>
+              Withdraw funds from your account
+            </Text>
           </View>
 
           {/* Current Balance Card */}
@@ -110,11 +120,11 @@ const DepositPage = () => {
             <Text style={styles.balanceAmount}>{formatCurrency(balance)}</Text>
           </View>
 
-          {/* Deposit Form Card */}
+          {/* Withdraw Form Card */}
           <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Deposit Amount</Text>
+            <Text style={styles.formTitle}>Withdraw Amount</Text>
             <Text style={styles.formSubtitle}>
-              Enter the amount you want to deposit
+              Enter the amount you want to withdraw
             </Text>
 
             <View style={styles.inputContainer}>
@@ -132,31 +142,37 @@ const DepositPage = () => {
 
             {amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0 && (
               <View style={styles.previewCard}>
-                <Text style={styles.previewLabel}>You will deposit:</Text>
+                <Text style={styles.previewLabel}>You will withdraw:</Text>
                 <Text style={styles.previewAmount}>
                   {formatCurrency(parseFloat(amount))}
                 </Text>
                 <Text style={styles.previewNewBalance}>
-                  New balance: {formatCurrency(balance + parseFloat(amount))}
+                  New balance: {formatCurrency(balance - parseFloat(amount))}
                 </Text>
+                {parseFloat(amount) > balance && (
+                  <Text style={styles.errorText}>⚠️ Insufficient balance</Text>
+                )}
               </View>
             )}
 
             <TouchableOpacity
               style={[
                 styles.submitButton,
-                depositMutation.isPending && styles.submitButtonDisabled,
+                (withdrawMutation.isPending || parseFloat(amount) > balance) &&
+                  styles.submitButtonDisabled,
               ]}
-              onPress={handleDeposit}
-              disabled={depositMutation.isPending}
+              onPress={handleWithdraw}
+              disabled={
+                withdrawMutation.isPending || parseFloat(amount) > balance
+              }
             >
-              {depositMutation.isPending ? (
+              {withdrawMutation.isPending ? (
                 <ActivityIndicator color={colors.white} />
               ) : (
                 <>
-                  <Text style={styles.submitButtonText}>Deposit Money</Text>
+                  <Text style={styles.submitButtonText}>Withdraw Money</Text>
                   <AntDesign
-                    name="check-circle"
+                    name="minus-circle"
                     size={20}
                     color={colors.white}
                     style={styles.submitIcon}
@@ -307,6 +323,12 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     fontWeight: "500",
   },
+  errorText: {
+    fontSize: 14,
+    color: "#ef4444",
+    fontWeight: "600",
+    marginTop: 8,
+  },
   submitButton: {
     backgroundColor: colors.primary,
     borderRadius: 16,
@@ -352,10 +374,10 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: "black",
+    color: "#E0F6FF",
     marginBottom: 8,
     lineHeight: 20,
   },
 });
 
-export default DepositPage;
+export default WithdrawPage;

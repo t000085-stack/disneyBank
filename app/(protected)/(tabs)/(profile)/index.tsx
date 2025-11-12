@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -16,11 +16,76 @@ import { formatCurrency } from "@/src/utils/currencyFormat";
 import { AntDesign } from "@expo/vector-icons";
 
 /**
+ * Helper function to get the image URL from user object
+ * Handles relative paths, absolute URLs, and multiple field names
+ */
+const getImageUrl = (user: any): string | null => {
+  if (!user) return null;
+
+  // Check multiple possible field names
+  const imagePath =
+    user.imageUrl || user.image || user.profileImage || user.avatar;
+
+  if (!imagePath) return null;
+
+  // If it's already a full URL, return it
+  if (
+    typeof imagePath === "string" &&
+    (imagePath.startsWith("http://") || imagePath.startsWith("https://"))
+  ) {
+    return imagePath;
+  }
+
+  // If it's a relative path starting with "/", prepend the base URL
+  if (typeof imagePath === "string" && imagePath.startsWith("/")) {
+    return `https://react-bank-project.eapi.joincoded.com${imagePath}`;
+  }
+
+  // If it's a relative path (like "media/..."), prepend the base URL with "/"
+  if (typeof imagePath === "string" && !imagePath.startsWith("http")) {
+    // Ensure the path starts with "/" for proper URL construction
+    const normalizedPath = imagePath.startsWith("/")
+      ? imagePath
+      : `/${imagePath}`;
+    return `https://react-bank-project.eapi.joincoded.com${normalizedPath}`;
+  }
+
+  // Otherwise return as is
+  return imagePath;
+};
+
+/**
  * Profile Page
  * Displays user profile information fetched from /mini-project/api/auth/me
  */
 const ProfilePage = () => {
   const { user, balance, isLoading, refreshProfile } = useUser();
+
+  useEffect(() => {
+    if (user) {
+      console.log("User profile data:", JSON.stringify(user, null, 2));
+      console.log("Username field:", user.username);
+      console.log("All user keys:", Object.keys(user));
+      console.log("Image URL:", user.imageUrl);
+      console.log("Image field:", (user as any).image);
+      console.log("Profile Image:", (user as any).profileImage);
+      console.log("Avatar:", (user as any).avatar);
+
+      // Check image path type
+      const imagePath = user.imageUrl || (user as any).image;
+      if (imagePath) {
+        console.log(
+          "Image path type:",
+          imagePath.startsWith("http") ? "Full URL" : "Relative path"
+        );
+        console.log("Final image URL:", getImageUrl(user));
+      } else {
+        console.log("No image path found in user object");
+      }
+    } else {
+      console.log("User is null or undefined");
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -59,56 +124,85 @@ const ProfilePage = () => {
           </View>
 
           {/* Profile Card */}
-          <View style={styles.profileCard}>
-            {/* Avatar */}
-            <View style={styles.avatarContainer}>
-              {user?.imageUrl ? (
-                <Image source={{ uri: user.imageUrl }} style={styles.avatar} />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <AntDesign name="user" size={50} color={colors.primary} />
-                </View>
-              )}
-            </View>
-
-            {/* User Info */}
-            <View style={styles.infoSection}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Username</Text>
-                <Text style={styles.infoValue}>{user?.username || "N/A"}</Text>
+          {user ? (
+            <View style={styles.profileCard}>
+              {/* Avatar */}
+              <View style={styles.avatarContainer}>
+                {getImageUrl(user) ? (
+                  <Image
+                    source={{ uri: getImageUrl(user)! }}
+                    style={styles.avatar}
+                    onError={(e) => {
+                      console.log("Image load error:", e.nativeEvent.error);
+                      console.log(
+                        "Failed to load image URL:",
+                        getImageUrl(user)
+                      );
+                    }}
+                    onLoad={() => {
+                      console.log(
+                        "Image loaded successfully:",
+                        getImageUrl(user)
+                      );
+                    }}
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <AntDesign name="user" size={50} color={colors.primary} />
+                  </View>
+                )}
               </View>
 
-              {user?.name && (
+              {/* User Info */}
+              <View style={styles.infoSection}>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Name</Text>
-                  <Text style={styles.infoValue}>{user.name}</Text>
-                </View>
-              )}
-
-              {user?.email && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Email</Text>
-                  <Text style={styles.infoValue}>{user.email}</Text>
-                </View>
-              )}
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Account Balance</Text>
-                <Text style={[styles.infoValue, styles.balanceValue]}>
-                  {formatCurrency(balance)}
-                </Text>
-              </View>
-
-              {user?._id && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>User ID</Text>
-                  <Text style={[styles.infoValue, styles.userIdValue]}>
-                    {user._id}
+                  <Text style={styles.infoLabel}>Username</Text>
+                  <Text style={styles.infoValue}>
+                    {user?.username ||
+                      (user as any)?.userName ||
+                      user?.name ||
+                      "N/A"}
                   </Text>
                 </View>
-              )}
+
+                {user?.name && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Name</Text>
+                    <Text style={styles.infoValue}>{user.name}</Text>
+                  </View>
+                )}
+
+                {user?.email && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Email</Text>
+                    <Text style={styles.infoValue}>{user.email}</Text>
+                  </View>
+                )}
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Account Balance</Text>
+                  <Text style={[styles.infoValue, styles.balanceValue]}>
+                    {formatCurrency(balance)}
+                  </Text>
+                </View>
+
+                {user?._id && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>User ID</Text>
+                    <Text style={[styles.infoValue, styles.userIdValue]}>
+                      {user._id}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
+          ) : (
+            <View style={styles.profileCard}>
+              <Text style={styles.errorText}>
+                No user data available. Please refresh.
+              </Text>
+            </View>
+          )}
 
           {/* Balance Card */}
           <View style={styles.balanceCard}>
@@ -272,6 +366,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#E0F6FF",
     opacity: 0.7,
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.secondary,
+    textAlign: "center",
+    padding: 20,
   },
 });
 

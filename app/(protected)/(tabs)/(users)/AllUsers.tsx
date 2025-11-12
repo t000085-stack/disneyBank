@@ -12,20 +12,18 @@ const Users = () => {
   });
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.primary }}>
-      <UserProfileCard
-        imageUrl="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
-        email="test@test.com"
-        username="test"
-      />
       {users?.map((user: any) => (
         <UserProfileCard
           key={user._id || user.email}
           imageUrl={
             user.imageUrl ||
+            user.image ||
             "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
           }
           email={user.email}
           username={user.name || user.username}
+          userId={user._id}
+          balance={user.balance}
         />
       ))}
     </ScrollView>

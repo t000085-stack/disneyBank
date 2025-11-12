@@ -21,12 +21,16 @@ const register = async (userInfo: UserInfo, image: string, name: string) => {
 
     formData.append("username", userInfo.username);
     formData.append("password", userInfo.password);
-    formData.append("name", name);
-    formData.append("image", {
-      name: "image",
-      uri: image,
-      type: "image/jpeg",
-    } as any);
+    formData.append("name", name || userInfo.username); // Use username as fallback if name is empty
+
+    // Only append image if it exists and is not empty
+    if (image && image.trim() !== "") {
+      formData.append("image", {
+        name: "image",
+        uri: image,
+        type: "image/jpeg",
+      } as any);
+    }
 
     const { data } = await instance.post(
       "/mini-project/api/auth/register",

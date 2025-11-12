@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import { getAllUsers } from "@/src/api/authApi";
 import { AntDesign } from "@expo/vector-icons";
 import { useUser } from "@/src/context/UserContext";
+import { LinearGradient } from "expo-linear-gradient";
 
 const AddTransaction = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -49,7 +50,8 @@ const AddTransaction = () => {
     onSuccess: async (data) => {
       updateBalance(data.balance);
       await refreshProfile();
-      queryClient.invalidateQueries({ queryKey: ["myTransactions"] });
+      // Refetch transactions immediately to ensure fresh data
+      await queryClient.refetchQueries({ queryKey: ["myTransactions"] });
       Alert.alert("Success", "Money transferred successfully! 🔄");
       navigate.push("/(protected)/(tabs)/(home)");
     },
@@ -86,52 +88,59 @@ const AddTransaction = () => {
 
   return (
     <>
-      {/* @ts-ignore - React 19 compatibility issue with React Native types */}
-      <SafeAreaView style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.formCard}>
-            <Text style={styles.heading}>Transfer Money</Text>
-            <Text style={styles.subText}>Transfer money to another user</Text>
+      <LinearGradient
+        colors={["#01147C", "#113CCF", "#BCEFFF", "#BFF5FD"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1 }}
+      >
+        {/* @ts-ignore - React 19 compatibility issue with React Native types */}
+        <SafeAreaView style={styles.container}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.formCard}>
+              <Text style={styles.heading}>Transfer Money</Text>
+              <Text style={styles.subText}>Transfer money to another user</Text>
 
-            <TouchableOpacity
-              style={[styles.input, styles.userPicker]}
-              onPress={() => setShowUserModal(true)}
-            >
-              <Text
-                style={
-                  selectedUser ? styles.selectedText : styles.placeholderText
-                }
+              <TouchableOpacity
+                style={[styles.input, styles.userPicker]}
+                onPress={() => setShowUserModal(true)}
               >
-                {selectedUser ? selectedUser.username : "Select a user"}
-              </Text>
-              <AntDesign name="down" size={16} color="#999" />
-            </TouchableOpacity>
+                <Text
+                  style={
+                    selectedUser ? styles.selectedText : styles.placeholderText
+                  }
+                >
+                  {selectedUser ? selectedUser.username : "Select a user"}
+                </Text>
+                <AntDesign name="down" size={16} color="#999" />
+              </TouchableOpacity>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Amount (e.g., 10 or -5)"
-              keyboardType="numeric"
-              value={amount}
-              onChangeText={setAmount}
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Amount (e.g., 10 or -5)"
+                keyboardType="numeric"
+                value={amount}
+                onChangeText={setAmount}
+              />
 
-            {/* <TextInput
+              {/* <TextInput
               style={styles.input}
               placeholder="Date (YYYY-MM-DD)"
               value={date}
               onChangeText={setDate}
             /> */}
 
-            {/* @ts-ignore - React 19 compatibility issue with React Native types */}
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleAddTransaction}
-            >
-              <Text style={styles.submitText}>Transfer Money</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+              {/* @ts-ignore - React 19 compatibility issue with React Native types */}
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleAddTransaction}
+              >
+                <Text style={styles.submitText}>Transfer Money</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </LinearGradient>
 
       {/* User Selection Modal */}
       <Modal
@@ -189,7 +198,7 @@ export default AddTransaction;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: "transparent",
     padding: 20,
   },
   formCard: {

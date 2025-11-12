@@ -9,10 +9,16 @@ import {
 /**
  * Gets the current user's transactions
  * GET /mini-project/api/transactions/my
+ * Ensures all transactions have a date field
  */
 export const getMyTransactions = async (): Promise<Transaction[]> => {
   const { data } = await instance.get("/mini-project/api/transactions/my");
-  return data;
+
+  // Ensure all transactions have a date
+  return (data || []).map((transaction: Transaction) => ({
+    ...transaction,
+    date: transaction.date || new Date().toISOString(),
+  }));
 };
 
 /**

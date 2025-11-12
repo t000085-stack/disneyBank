@@ -18,3 +18,12 @@ export const getAllUsers = async () => {
   const { data } = await instance.get("/mini-project/api/auth/users");
   return data;
 };
+
+/**
+ * Gets user info by userId
+ * GET /mini-project/api/auth/user/<userId>
+ */
+export const getUserById = async (userId: string) => {
+  const { data } = await instance.get(`/mini-project/api/auth/user/${userId}`);
+  return data;
+};

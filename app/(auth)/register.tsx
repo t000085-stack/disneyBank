@@ -14,12 +14,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { register } from "@/api/auth";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { storeToken } from "@/api/Storage";
 import AuthContext from "@/context/AuthContext";
+import { useUser } from "@/src/context/UserContext";
 
 const { width, height } = Dimensions.get("window");
 
@@ -38,13 +39,52 @@ const Register = () => {
   // const [name, setName] = useState<string>("");
   const router = useRouter();
   const { setIsAuthenticated } = useContext(AuthContext);
+  const { refreshProfile } = useUser();
+  const queryClient = useQueryClient();
+
+  // Cloud animation - floating behind logo
+  const cloudTranslateX = useRef(new Animated.Value(0)).current;
+  const cloudTranslateY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Horizontal floating animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(cloudTranslateX, {
+          toValue: 20,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cloudTranslateX, {
+          toValue: -20,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Vertical floating animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(cloudTranslateY, {
+          toValue: 10,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cloudTranslateY, {
+          toValue: -10,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   const { mutate: registerMutation } = useMutation({
     mutationKey: ["register"],
-    mutationFn: () => register({ username, password }, image || "", ""),
+    mutationFn: () => register({ username, password }, image || "", username),
     onSuccess: async (data: any) => {
       try {
-        // Handle different possible response structures
         const token =
           data?.Token || data?.token || data?.accessToken || data?.access_token;
 
@@ -56,13 +96,17 @@ const Register = () => {
 
         await storeToken(token);
 
+        // Clear React Query cache for new user
+        queryClient.clear();
+
         // Wait a bit to ensure token is stored
         await new Promise((resolve) => setTimeout(resolve, 100));
 
+        // Explicitly refresh the profile to get the latest balance
+        await refreshProfile();
+
         setIsAuthenticated(true);
 
-        // Use replace instead of push to avoid navigation stack issues
-        // Add a small delay to ensure state is updated
         setTimeout(() => {
           router.replace("/(protected)/(tabs)");
         }, 200);
@@ -108,12 +152,12 @@ const Register = () => {
       return;
     }
 
-    // Launch image picker
+    // Launch image picker with reduced quality to avoid 413 error
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1,
+      quality: 0.7, // Reduced from 1 to 0.7 to reduce file size and avoid 413 error
     });
 
     if (!result.canceled) {
@@ -281,10 +325,32 @@ const Register = () => {
           {/* Bank Logo/Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Text style={styles.logoEmoji}>🏰</Text>
+              {/* Animated Cloud Background */}
+              <Animated.View
+                style={[
+                  styles.cloudContainer,
+                  {
+                    transform: [
+                      { translateX: cloudTranslateX },
+                      { translateY: cloudTranslateY },
+                    ],
+                  },
+                ]}
+              >
+                <Image
+                  source={require("@/src/assets/images/cloud.png")}
+                  style={styles.cloudImage}
+                />
+              </Animated.View>
+
+              {/* Logo on top */}
+              <Image
+                source={require("@/src/assets/images/logo3.png")}
+                style={styles.logoImage}
+              />
             </View>
             <Text style={styles.appName}> Disney Bank</Text>
-            <Text style={styles.tagline}>Where every coin starts a spark</Text>
+            <Text style={styles.tagline}>Open your Magic Account</Text>
           </View>
 
           {/* Main Card */}
@@ -437,10 +503,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 15,
+    position: "relative",
+    width: 200,
+    height: 200,
   },
-  logoEmoji: {
-    fontSize: 100,
-    textAlign: "center",
+  cloudContainer: {
+    position: "absolute",
+    width: 350,
+    height: 350,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  cloudImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "contain",
+    opacity: 0.6,
+  },
+  logoImage: {
+    width: 200,
+    height: 200,
+    resizeMode: "contain",
+    position: "relative",
+    zIndex: 2,
   },
   appName: {
     fontSize: 36,

@@ -36,10 +36,29 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       if (currentToken) {
         setToken(currentToken);
         const profile = await getProfile();
+        console.log(
+          "Profile fetched from API:",
+          JSON.stringify(profile, null, 2)
+        );
+        console.log("Balance from API:", profile.balance);
+        console.log("Balance type:", typeof profile.balance);
         setUser(profile);
+      } else {
+        // Clear user data if no token
+        setUser(null);
+        setToken(null);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
+      // Clear user data on error, but keep token in storage
+      // Token will only be deleted on explicit logout
+      setUser(null);
+      // Don't clear token state - keep it so user stays logged in
+      // Only clear if token is actually missing from storage
+      const tokenStillExists = await getToken();
+      if (!tokenStillExists) {
+        setToken(null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -60,6 +79,22 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     refreshProfile();
   }, []);
 
+  // Clear user data when token changes or is removed
+  useEffect(() => {
+    const checkToken = async () => {
+      const currentToken = await getToken();
+      if (!currentToken) {
+        // Clear user data if no token
+        setUser(null);
+        setToken(null);
+      } else if (currentToken !== token) {
+        // Token changed, refresh profile for new user
+        refreshProfile();
+      }
+    };
+    checkToken();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
   return (
     <UserContext.Provider
       value={{

@@ -8,7 +8,9 @@ import UserInfo from "@/types/UserInfo";
 // };
 
 const getUserTransaction = async (userId: string) => {
-  const { data } = await instance.get(`/transactions/my-transaction/${userId}`);
+  const { data } = await instance.get(
+    `/mini-project/api/transactions/my-transaction/${userId}`
+  );
   return data;
 };
 
