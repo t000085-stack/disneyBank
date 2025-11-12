@@ -35,11 +35,20 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="(profile)"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <AntDesign name="user" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="(users)"
         options={{
           title: "Users",
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <AntDesign name="user" size={size} color={color} />
+            <AntDesign name="team" size={size} color={color} />
           ),
         }}
       />

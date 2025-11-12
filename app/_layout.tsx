@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "react-native";
 import colors from "@/data/styling/colors";
 import { getToken } from "@/api/Storage";
+import { UserProvider } from "@/src/context/UserContext";
 
 const RootLayout = () => {
   const queryClient = new QueryClient();
@@ -21,10 +22,12 @@ const RootLayout = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated }}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(protected)" />
-        </Stack>
+        <UserProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(protected)" />
+          </Stack>
+        </UserProvider>
       </AuthContext.Provider>
     </QueryClientProvider>
   );

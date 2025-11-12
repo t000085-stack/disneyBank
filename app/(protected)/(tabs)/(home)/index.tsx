@@ -4,15 +4,24 @@ import {
   Text,
   View,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import React from "react";
 import colors from "@/data/styling/colors";
 import { useQuery } from "@tanstack/react-query";
-import { getAllAccounts, getAllTransactions, getAllGoals } from "@/api/bank";
-import { AccountType, TransactionType, GoalType } from "@/types/BankTypes";
+import { getAllAccounts } from "@/api/bank";
+import { getMyTransactions } from "@/src/api/transactionsApi";
+import { AccountType } from "@/types/BankTypes";
+import { Transaction } from "@/src/types/transaction";
 import AccountCard from "@/components/AccountCard";
+import { useUser } from "@/src/context/UserContext";
+import { formatCurrency } from "@/src/utils/currencyFormat";
+import { useRouter } from "expo-router";
+import { AntDesign } from "@expo/vector-icons";
 
 const Home = () => {
+  const { balance, isLoading: userLoading } = useUser();
+  const router = useRouter();
   const {
     data: accounts,
     isLoading: accountsLoading,
@@ -28,22 +37,12 @@ const Home = () => {
     isLoading: transactionsLoading,
     error: transactionsError,
   } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: getAllTransactions,
+    queryKey: ["myTransactions"],
+    queryFn: getMyTransactions,
     retry: 1,
   });
 
-  const {
-    data: goals,
-    isLoading: goalsLoading,
-    error: goalsError,
-  } = useQuery({
-    queryKey: ["goals"],
-    queryFn: getAllGoals,
-    retry: 1,
-  });
-
-  const isLoading = accountsLoading || transactionsLoading || goalsLoading;
+  const isLoading = accountsLoading || transactionsLoading;
 
   if (isLoading) {
     return (
@@ -67,32 +66,49 @@ const Home = () => {
       showsVerticalScrollIndicator={false}
     >
       {/* ACCOUNTS SECTION */}
-      <Text
+      <View
         style={{
-          fontSize: 22,
-          fontWeight: "bold",
-          color: colors.white,
-          marginBottom: 15,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
           marginTop: 10,
+          marginBottom: 15,
         }}
       >
-        🏦 My Accounts
-      </Text>
-      {accountsError ? (
-        <View
+        <Text
           style={{
-            backgroundColor: colors.secondary,
-            padding: 20,
-            borderRadius: 12,
-            marginBottom: 20,
-            alignItems: "center",
+            fontSize: 22,
+            fontWeight: "bold",
+            color: colors.white,
           }}
         >
-          <Text style={{ color: colors.white, fontSize: 16 }}>
-            Error loading accounts
+          🏦 My Accounts
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.push("/(protected)/(tabs)/(home)/deposit")}
+          style={{
+            backgroundColor: colors.white,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 20,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <AntDesign name="plus" size={16} color={colors.primary} />
+          <Text
+            style={{
+              color: colors.primary,
+              fontWeight: "bold",
+              fontSize: 14,
+            }}
+          >
+            Deposit
           </Text>
-        </View>
-      ) : Array.isArray(accounts) && accounts.length > 0 ? (
+        </TouchableOpacity>
+      </View>
+      {Array.isArray(accounts) && accounts.length > 0 ? (
         accounts.map((account: AccountType) => (
           <AccountCard
             key={account._id}
@@ -115,9 +131,29 @@ const Home = () => {
             alignItems: "center",
           }}
         >
-          <Text style={{ color: colors.white, fontSize: 16 }}>
-            No accounts found
+          <Text
+            style={{
+              color: colors.white,
+              fontSize: 18,
+              fontWeight: "bold",
+              marginBottom: 8,
+            }}
+          >
+            Account Balance
           </Text>
+          <Text
+            style={{ color: colors.white, fontSize: 24, fontWeight: "bold" }}
+          >
+            {userLoading ? "Loading..." : formatCurrency(balance)}
+          </Text>
+          <Text
+            style={{
+              color: colors.white,
+              fontSize: 14,
+              marginTop: 8,
+              opacity: 0.8,
+            }}
+          ></Text>
         </View>
       )}
 
@@ -133,22 +169,8 @@ const Home = () => {
       >
         💰 Recent Transactions
       </Text>
-      {transactionsError ? (
-        <View
-          style={{
-            backgroundColor: colors.secondary,
-            padding: 20,
-            borderRadius: 12,
-            marginBottom: 20,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: colors.white, fontSize: 16 }}>
-            Error loading transactions
-          </Text>
-        </View>
-      ) : Array.isArray(transactions) && transactions.length > 0 ? (
-        transactions.slice(0, 5).map((transaction: TransactionType) => (
+      {Array.isArray(transactions) && transactions.length > 0 ? (
+        transactions.slice(0, 5).map((transaction: Transaction) => (
           <View
             key={transaction._id}
             style={{
@@ -170,11 +192,20 @@ const Home = () => {
                   marginBottom: 5,
                 }}
               >
-                {transaction.title}
+                {transaction.type || transaction.description || "Transaction"}
               </Text>
               <Text style={{ color: colors.white, opacity: 0.7, fontSize: 12 }}>
                 📅 {transaction.date}
               </Text>
+              {transaction.username && (
+                <Text
+                  style={{ color: colors.white, opacity: 0.7, fontSize: 12 }}
+                >
+                  {transaction.type === "Transfer"
+                    ? `To: ${transaction.username}`
+                    : transaction.username}
+                </Text>
+              )}
             </View>
             <Text
               style={{
@@ -200,104 +231,6 @@ const Home = () => {
         >
           <Text style={{ color: colors.white, fontSize: 16 }}>
             No transactions found
-          </Text>
-        </View>
-      )}
-
-      {/* SAVING GOALS SECTION */}
-      <Text
-        style={{
-          fontSize: 22,
-          fontWeight: "bold",
-          color: colors.white,
-          marginBottom: 15,
-          marginTop: 20,
-        }}
-      >
-        🎯 Saving Goals
-      </Text>
-      {goalsError ? (
-        <View
-          style={{
-            backgroundColor: colors.secondary,
-            padding: 20,
-            borderRadius: 12,
-            marginBottom: 20,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: colors.white, fontSize: 16 }}>
-            Error loading goals
-          </Text>
-        </View>
-      ) : Array.isArray(goals) && goals.length > 0 ? (
-        goals.map((goal: GoalType) => {
-          const progress = (goal.saved / goal.target) * 100;
-          return (
-            <View
-              key={goal._id}
-              style={{
-                backgroundColor: colors.secondary,
-                padding: 15,
-                borderRadius: 12,
-                marginBottom: 10,
-              }}
-            >
-              <Text
-                style={{
-                  color: colors.white,
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  marginBottom: 10,
-                }}
-              >
-                {goal.title}
-              </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginBottom: 8,
-                }}
-              >
-                <Text style={{ color: colors.white, fontSize: 14 }}>
-                  ${goal.saved.toFixed(2)} / ${goal.target.toFixed(2)}
-                </Text>
-                <Text style={{ color: colors.white, fontSize: 14 }}>
-                  {progress.toFixed(0)}%
-                </Text>
-              </View>
-              <View
-                style={{
-                  height: 8,
-                  backgroundColor: colors.primary,
-                  borderRadius: 4,
-                  overflow: "hidden",
-                }}
-              >
-                <View
-                  style={{
-                    height: "100%",
-                    width: `${Math.min(progress, 100)}%`,
-                    backgroundColor: "#51cf66",
-                  }}
-                />
-              </View>
-            </View>
-          );
-        })
-      ) : (
-        <View
-          style={{
-            backgroundColor: colors.secondary,
-            padding: 20,
-            borderRadius: 12,
-            marginBottom: 20,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: colors.white, fontSize: 16 }}>
-            No saving goals found
           </Text>
         </View>
       )}

@@ -39,7 +39,13 @@ const HomeLayout = () => {
           ),
         }}
       />
-      <Stack.Screen name="[accountDT]" options={{ title: "Account Details" }} />
+      <Stack.Screen
+        name="deposit"
+        options={{
+          title: "Deposit Money",
+          headerTintColor: colors.white,
+        }}
+      />
       <Stack.Screen name="userId" options={{ title: "User Transactions" }} />
     </Stack>
   );
